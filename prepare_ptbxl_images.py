@@ -54,6 +54,13 @@ def main():
     p.add_argument("--out-dir", default="data/ptbxl_images")
     p.add_argument("--method", default="waveform_grid",
                     choices=["waveform_grid", "spectrogram", "scalogram", "gaf", "recurrence_plot"])
+    p.add_argument("--layout", default="stack", choices=["stack", "grid"],
+                    help="waveform_grid only. 'stack' = one full-width row per lead (default, "
+                         "matches the original Qwen image set). 'grid' = 3x4 clinical-style panel "
+                         "layout -- use this for PULSE, which was trained on standard 12-lead layouts.")
+    p.add_argument("--style", default="clinical", choices=["clinical", "plain"],
+                    help="waveform_grid only. 'clinical' draws the pink/red ECG-paper grid PULSE "
+                         "expects; 'plain' is a white background.")
     p.add_argument("--splits", nargs="+", default=["train", "val", "test"])
     p.add_argument("--num-workers", type=int, default=None)
     p.add_argument("--keep-standardized", action="store_true",
@@ -118,6 +125,11 @@ def main():
         method_kwargs = {"lead_names": PTBXL_LEAD_NAMES}
         if args.method in ("waveform_grid", "spectrogram", "scalogram"):
             method_kwargs["fs"] = PTBXLClassificationDataset.sampling_rate
+        if args.method == "waveform_grid":
+            # 'grid' (3x4 panels) matches PULSE's standard-12-lead training
+            # distribution far better than the default vertical 'stack'.
+            method_kwargs["layout"] = args.layout
+            method_kwargs["style"] = args.style
 
         precompute_dataset_images(
             signals, labels, split_out, method=args.method,
